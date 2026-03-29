@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket STOMP Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        #log { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; background: #f9f9f9; }
+        button { margin: 5px; padding: 8px 16px; }
+        input { padding: 8px; width: 300px; }
+    </style>
+</head>
+<body>
+    <h2>WebSocket STOMP Test</h2>
+
+    <div>
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+    </div>
+    <br>
+    <div>
+        <input id="message" type="text" placeholder="메시지 입력" />
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <br>
+    <div id="log"></div>
+
+    <script>
+        let stompClient = null;
+
+        function log(msg) {
+            const div = document.getElementById('log');
+            div.innerHTML += `<div>${new Date().toLocaleTimeString()} - ${msg}</div>`;
+            div.scrollTop = div.scrollHeight;
+        }
+
+        function connect() {
+            const socket = new SockJS('/ws-stomp');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function (frame) {
+                log('Connected: ' + frame);
+                stompClient.subscribe('/topic/chat', function (message) {
+                    log('Received: ' + message.body);
+                });
+            }, function (error) {
+                log('Error: ' + error);
+            });
+        }
+
+        function disconnect() {
+            if (stompClient) {
+                stompClient.disconnect();
+                log('Disconnected');
+            }
+        }
+
+        function sendMessage() {
+            const msg = document.getElementById('message').value;
+            if (stompClient && stompClient.connected) {
+                stompClient.send('/app/chat', {}, msg);
+                log('Sent: ' + msg);
+            } else {
+                log('Not connected');
+            }
+        }
+    </script>
+</body>
+</html>
