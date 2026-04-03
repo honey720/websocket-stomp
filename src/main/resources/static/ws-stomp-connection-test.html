@@ -2,69 +2,195 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>WebSocket STOMP Test</title>
+    <title>WebSocket STOMP Chat Test</title>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
     <style>
-        body { font-family: monospace; padding: 20px; }
-        #log { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; background: #f9f9f9; }
-        button { margin: 5px; padding: 8px 16px; }
-        input { padding: 8px; width: 300px; }
+        body { font-family: monospace; padding: 20px; max-width: 800px; }
+        section { border: 1px solid #ddd; padding: 12px; margin-bottom: 16px; border-radius: 4px; }
+        h3 { margin: 0 0 10px; }
+        #chatLog { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; background: #f9f9f9; }
+        #chatLog .msg { margin: 3px 0; }
+        #chatLog .msg.ENTER  { color: #2a7; }
+        #chatLog .msg.LEAVE  { color: #a33; }
+        #chatLog .msg.TALK   { color: #333; }
+        #chatLog .msg.system { color: #888; font-style: italic; }
+        button { margin: 4px; padding: 6px 14px; cursor: pointer; }
+        input, select { padding: 6px; margin: 4px; }
+        #roomList { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .room-btn { background: #eef; border: 1px solid #99c; border-radius: 4px; }
+        .room-btn.active { background: #ccf; font-weight: bold; }
+        #status { font-size: 12px; color: #888; }
     </style>
 </head>
 <body>
-    <h2>WebSocket STOMP Test</h2>
+    <h2>WebSocket STOMP Chat Test</h2>
+    <div id="status">연결 안됨</div>
 
-    <div>
-        <button onclick="connect()">Connect</button>
-        <button onclick="disconnect()">Disconnect</button>
-    </div>
-    <br>
-    <div>
-        <input id="message" type="text" placeholder="메시지 입력" />
-        <button onclick="sendMessage()">Send</button>
-    </div>
-    <br>
-    <div id="log"></div>
+    <section>
+        <h3>채팅방 관리</h3>
+        <input id="newRoomName" type="text" placeholder="새 방 이름" />
+        <button onclick="createRoom()">방 생성</button>
+        <button onclick="loadRooms()">목록 새로고침</button>
+        <div id="roomList"></div>
+    </section>
+
+    <section>
+        <h3>접속</h3>
+        <input id="sender" type="text" placeholder="닉네임" value="익명" style="width:150px"/>
+        <button onclick="connect()" id="connectBtn">Connect</button>
+        <button onclick="disconnect()" id="disconnectBtn" disabled>Disconnect</button>
+        <span id="currentRoom" style="margin-left:12px;color:#555;"></span>
+    </section>
+
+    <section>
+        <h3>채팅 <span id="roomLabel"></span></h3>
+        <div id="chatLog"></div>
+        <div style="margin-top:8px;">
+            <input id="message" type="text" placeholder="메시지 입력" style="width:400px"
+                   onkeydown="if(event.key==='Enter') sendMessage()" />
+            <button onclick="sendMessage()">전송</button>
+        </div>
+    </section>
 
     <script>
         let stompClient = null;
+        let currentRoomId = null;
+        let currentSubscription = null;
 
-        function log(msg) {
-            const div = document.getElementById('log');
-            div.innerHTML += `<div>${new Date().toLocaleTimeString()} - ${msg}</div>`;
+        function sysLog(msg) {
+            appendLog('system', '', msg);
+        }
+
+        function appendLog(type, sender, text) {
+            const div = document.getElementById('chatLog');
+            const line = document.createElement('div');
+            line.className = 'msg ' + type;
+            const time = new Date().toLocaleTimeString();
+            line.textContent = `[${time}] ${sender ? sender + ': ' : ''}${text}`;
+            div.appendChild(line);
             div.scrollTop = div.scrollHeight;
         }
 
+        /* ── 채팅방 ── */
+        async function createRoom() {
+            const name = document.getElementById('newRoomName').value.trim();
+            if (!name) return alert('방 이름을 입력하세요');
+            await fetch('/api/rooms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            document.getElementById('newRoomName').value = '';
+            loadRooms();
+        }
+
+        async function loadRooms() {
+            const res = await fetch('/api/rooms');
+            const rooms = await res.json();
+            const container = document.getElementById('roomList');
+            container.innerHTML = '';
+            if (rooms.length === 0) {
+                container.textContent = '채팅방 없음';
+                return;
+            }
+            rooms.forEach(r => {
+                const btn = document.createElement('button');
+                btn.className = 'room-btn' + (r.id === currentRoomId ? ' active' : '');
+                btn.textContent = `#${r.id} ${r.name}`;
+                btn.onclick = () => selectRoom(r.id, r.name);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectRoom(roomId, roomName) {
+            currentRoomId = roomId;
+            document.getElementById('currentRoom').textContent = `선택된 방: #${roomId} ${roomName}`;
+            document.getElementById('roomLabel').textContent = `— #${roomId} ${roomName}`;
+            document.getElementById('chatLog').innerHTML = '';
+
+            // 이미 연결된 경우 구독 변경
+            if (stompClient && stompClient.connected) {
+                subscribeToRoom(roomId);
+            }
+            loadRooms();
+        }
+
+        /* ── WebSocket ── */
         function connect() {
             const socket = new SockJS('/ws-stomp');
             stompClient = Stomp.over(socket);
-            stompClient.connect({}, function (frame) {
-                log('Connected: ' + frame);
-                stompClient.subscribe('/topic/chat', function (message) {
-                    log('Received: ' + message.body);
-                });
-            }, function (error) {
-                log('Error: ' + error);
+            stompClient.debug = null; // 콘솔 노이즈 제거
+
+            stompClient.connect({}, frame => {
+                sysLog('서버 연결됨');
+                document.getElementById('status').textContent = '연결됨';
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+
+                if (currentRoomId) subscribeToRoom(currentRoomId);
+
+                // ENTER 메시지 전송
+                if (currentRoomId) sendEnterLeave('ENTER');
+            }, error => {
+                sysLog('연결 오류: ' + error);
+                document.getElementById('status').textContent = '연결 오류';
             });
         }
 
         function disconnect() {
             if (stompClient) {
-                stompClient.disconnect();
-                log('Disconnected');
+                if (currentRoomId) sendEnterLeave('LEAVE');
+                stompClient.disconnect(() => {
+                    sysLog('연결 종료');
+                    document.getElementById('status').textContent = '연결 안됨';
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                });
             }
         }
 
-        function sendMessage() {
-            const msg = document.getElementById('message').value;
-            if (stompClient && stompClient.connected) {
-                stompClient.send('/app/chat', {}, msg);
-                log('Sent: ' + msg);
-            } else {
-                log('Not connected');
-            }
+        function subscribeToRoom(roomId) {
+            if (currentSubscription) currentSubscription.unsubscribe();
+            currentSubscription = stompClient.subscribe('/topic/chat/' + roomId, msg => {
+                const data = JSON.parse(msg.body);
+                appendLog(data.messageType || 'TALK', data.sender, data.content);
+            });
+            sysLog('채팅방 #' + roomId + ' 구독 시작');
         }
+
+        function sendEnterLeave(type) {
+            if (!stompClient || !stompClient.connected || !currentRoomId) return;
+            const sender = document.getElementById('sender').value || '익명';
+            const payload = {
+                roomId: currentRoomId,
+                sender,
+                content: sender + (type === 'ENTER' ? '님이 입장했습니다.' : '님이 퇴장했습니다.'),
+                messageType: type
+            };
+            stompClient.send('/app/chat/' + currentRoomId, {}, JSON.stringify(payload));
+        }
+
+        function sendMessage() {
+            if (!stompClient || !stompClient.connected) return sysLog('연결되지 않았습니다');
+            if (!currentRoomId) return sysLog('채팅방을 선택하세요');
+
+            const content = document.getElementById('message').value.trim();
+            if (!content) return;
+
+            const sender = document.getElementById('sender').value || '익명';
+            const payload = {
+                roomId: currentRoomId,
+                sender,
+                content,
+                messageType: 'TALK'
+            };
+            stompClient.send('/app/chat/' + currentRoomId, {}, JSON.stringify(payload));
+            document.getElementById('message').value = '';
+        }
+
+        // 페이지 로드 시 방 목록 가져오기
+        loadRooms();
     </script>
 </body>
 </html>

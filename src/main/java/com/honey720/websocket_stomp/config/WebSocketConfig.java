@@ -33,7 +33,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 // 클라이언트가 WebSocket 연결을 시도할 때 사용할 엔드포인트를 등록합니다. 예를 들어, "/ws-stomp" 엔드포인트를 등록합니다.
                 .addEndpoint("/ws-stomp")
                 // SockJS를 사용하여 WebSocket을 지원하지 않는 브라우저에서도 WebSocket과 유사한 기능을 사용할 수 있도록 합니다.
-                .withSockJS();
+                .withSockJS(); // SockJS를 사용해야하는 상황인지 고려할 것.
     }
 
     /**
