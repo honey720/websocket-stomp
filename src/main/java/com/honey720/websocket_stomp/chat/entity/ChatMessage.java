@@ -1,5 +1,7 @@
 package com.honey720.websocket_stomp.chat.entity;
 
+import com.honey720.websocket_stomp.entity.BaseEntity;
+import com.honey720.websocket_stomp.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -15,8 +17,9 @@ public class ChatMessage extends BaseEntity {
     @JoinColumn(name = "chat_room_id", nullable = false)
     private ChatRoom chatRoom;
 
-    @Column(nullable = false)
-    private String sender;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -26,9 +29,9 @@ public class ChatMessage extends BaseEntity {
     private MessageType messageType;
 
     @Builder
-    public ChatMessage(ChatRoom chatRoom, String sender, String content, MessageType messageType) {
+    public ChatMessage(ChatRoom chatRoom, Member member, String content, MessageType messageType) {
         this.chatRoom = chatRoom;
-        this.sender = sender;
+        this.member = member;
         this.content = content;
         this.messageType = messageType;
     }

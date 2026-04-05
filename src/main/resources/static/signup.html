@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>회원가입</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,.1); padding: 40px 36px; width: 380px; }
+    h1 { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 28px; color: #1a1a2e; }
+    label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; }
+    input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; transition: border .2s; }
+    input:focus { border-color: #4f6ef7; }
+    .field { margin-bottom: 16px; }
+    .hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+    button { width: 100%; padding: 12px; background: #4f6ef7; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+    button:hover { background: #3a56d4; }
+    .footer { text-align: center; margin-top: 18px; font-size: 13px; color: #888; }
+    .footer a { color: #4f6ef7; text-decoration: none; }
+    .message { font-size: 13px; text-align: center; margin-top: 10px; display: none; }
+    .message.error { color: #e74c3c; }
+    .message.success { color: #27ae60; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>회원가입</h1>
+    <form id="signupForm">
+      <div class="field">
+        <label for="username">아이디</label>
+        <input id="username" type="text" placeholder="4~16자" minlength="4" maxlength="16" required>
+        <div class="hint">영문, 숫자 4~16자</div>
+      </div>
+      <div class="field">
+        <label for="password">비밀번호</label>
+        <input id="password" type="password" placeholder="8~16자" minlength="8" maxlength="16" required>
+        <div class="hint">8~16자</div>
+      </div>
+      <div class="field">
+        <label for="nickname">닉네임</label>
+        <input id="nickname" type="text" placeholder="4~16자" minlength="4" maxlength="16" required>
+        <div class="hint">4~16자</div>
+      </div>
+      <button type="submit">가입하기</button>
+      <p class="message" id="msg"></p>
+    </form>
+    <div class="footer">
+      이미 계정이 있으신가요? <a href="/login.html">로그인</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('msg');
+      msg.style.display = 'none';
+      msg.className = 'message';
+
+      const body = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+        nickname: document.getElementById('nickname').value,
+      };
+
+      try {
+        const res = await fetch('/signUp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+          msg.textContent = '회원가입 성공! 로그인 페이지로 이동합니다.';
+          msg.className = 'message success';
+          msg.style.display = 'block';
+          setTimeout(() => window.location.href = '/login.html', 1500);
+        } else {
+          const text = await res.text();
+          msg.textContent = text || '회원가입에 실패했습니다.';
+          msg.className = 'message error';
+          msg.style.display = 'block';
+        }
+      } catch (err) {
+        msg.textContent = '서버에 연결할 수 없습니다.';
+        msg.className = 'message error';
+        msg.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

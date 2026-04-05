@@ -4,8 +4,10 @@ import com.honey720.websocket_stomp.chat.dto.ChatMessageDto;
 import com.honey720.websocket_stomp.chat.dto.CreateRoomRequest;
 import com.honey720.websocket_stomp.chat.entity.ChatMessage;
 import com.honey720.websocket_stomp.chat.entity.ChatRoom;
+import com.honey720.websocket_stomp.member.entity.Member;
 import com.honey720.websocket_stomp.chat.repository.ChatMessageRepository;
 import com.honey720.websocket_stomp.chat.repository.ChatRoomRepository;
+import com.honey720.websocket_stomp.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ public class ChatService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final MemberRepository memberRepository;
 
     @Transactional
     public ChatRoom createRoom(CreateRoomRequest request) {
@@ -35,9 +38,12 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다: " + roomId));
 
+        Member member = memberRepository.findById(dto.getMemberId())
+                .orElseThrow(() -> new IllegalArgumentException("멤버를 찾을 수 없습니다: " + dto.getMemberId()));
+
         ChatMessage saved = chatMessageRepository.save(ChatMessage.builder()
                 .chatRoom(chatRoom)
-                .sender(dto.getSender())
+                .member(member)
                 .content(dto.getContent())
                 .messageType(dto.getMessageType())
                 .build());
