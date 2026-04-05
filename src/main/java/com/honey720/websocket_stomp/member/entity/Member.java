@@ -24,9 +24,6 @@ public class Member extends BaseEntity {
     @Column(nullable = false, unique = true, length = 16)
     private String nickname;
 
-    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
-    private List<ChatMessage> messages;
-
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private MemberRole role;
