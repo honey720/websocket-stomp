@@ -5,11 +5,11 @@ import com.honey720.websocket_stomp.member.dto.SignUpDto;
 import com.honey720.websocket_stomp.member.entity.Member;
 import com.honey720.websocket_stomp.member.entity.MemberRole;
 import com.honey720.websocket_stomp.member.repository.MemberRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
