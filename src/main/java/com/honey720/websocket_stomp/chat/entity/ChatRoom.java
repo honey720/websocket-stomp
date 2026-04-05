@@ -1,5 +1,6 @@
 package com.honey720.websocket_stomp.chat.entity;
 
+import com.honey720.websocket_stomp.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

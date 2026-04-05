@@ -50,7 +50,6 @@ public class ChatController {
      */
     @MessageMapping("/chat/{roomId}")
     public void handleMessage(@DestinationVariable Long roomId, @Payload ChatMessageDto messageDto) {
-        messageDto.setRoomId(roomId);
         ChatMessageDto saved = chatService.saveMessage(roomId, messageDto);
         messagingTemplate.convertAndSend("/topic/chat/" + roomId, saved);
     }

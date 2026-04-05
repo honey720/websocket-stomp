@@ -1,4 +1,4 @@
-package com.honey720.websocket_stomp.chat.entity;
+package com.honey720.websocket_stomp.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

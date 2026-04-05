@@ -6,14 +6,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Getter
-@Setter
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ChatMessageDto {
 
     private Long roomId;
-    private String sender;
+    private Long memberId;
+    private String nickname;
     private String content;
     private ChatMessage.MessageType messageType;
     private LocalDateTime createdAt;
@@ -21,7 +20,8 @@ public class ChatMessageDto {
     public static ChatMessageDto from(ChatMessage message) {
         return ChatMessageDto.builder()
                 .roomId(message.getChatRoom().getId())
-                .sender(message.getSender())
+                .memberId(message.getMember().getId())
+                .nickname(message.getMember().getNickname())
                 .content(message.getContent())
                 .messageType(message.getMessageType())
                 .createdAt(message.getCreatedAt())
