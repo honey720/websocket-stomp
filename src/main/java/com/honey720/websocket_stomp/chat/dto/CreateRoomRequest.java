@@ -6,5 +6,5 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class CreateRoomRequest {
-    private String name;
+    private Long targetMemberId;
 }

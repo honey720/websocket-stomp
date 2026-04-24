@@ -8,12 +8,10 @@ import java.time.LocalDateTime;
 @Getter
 public class ChatRoomResponse {
     private final Long id;
-    private final String name;
-    private final LocalDateTime createdAt;
+    //private final LocalDateTime createdAt;
 
-    public ChatRoomResponse(ChatRoom chatRoom) {
-        this.id = chatRoom.getId();
-        this.name = chatRoom.getName();
-        this.createdAt = chatRoom.getCreatedAt();
+    public ChatRoomResponse(Long chatRoomId) {
+        this.id = chatRoomId;
+        //this.createdAt = chatRoom.getCreatedAt();
     }
 }
