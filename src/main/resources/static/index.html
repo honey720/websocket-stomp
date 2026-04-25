@@ -31,13 +31,6 @@
     .enter-btn:hover { background: #3a56d4; }
     .empty { color: #bbb; text-align: center; padding: 32px 0; font-size: 14px; }
 
-    /* 방 만들기 */
-    .create-form { display: flex; gap: 8px; margin-bottom: 20px; }
-    .create-form input { flex: 1; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
-    .create-form input:focus { border-color: #4f6ef7; }
-    .create-form button { padding: 10px 18px; background: #4f6ef7; color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; white-space: nowrap; }
-    .create-form button:hover { background: #3a56d4; }
-
     /* 유저 검색 */
     .search-form { display: flex; gap: 8px; margin-bottom: 12px; }
     .search-form input { flex: 1; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
@@ -46,8 +39,11 @@
     .search-form button:hover { background: #d0d6ff; }
     .user-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
     .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #4f6ef7; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; flex-shrink: 0; }
+    .user-info-text { flex: 1; }
     .user-name { font-size: 14px; font-weight: 600; }
     .user-id { font-size: 12px; color: #aaa; }
+    .chat-btn { padding: 5px 12px; background: #4f6ef7; color: #fff; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    .chat-btn:hover { background: #3a56d4; }
     .search-hint { font-size: 13px; color: #bbb; text-align: center; padding: 20px 0; }
   </style>
 </head>
@@ -64,14 +60,6 @@
     <!-- 채팅방 목록 -->
     <div>
       <div class="card">
-        <h2>채팅방 만들기</h2>
-        <div class="create-form">
-          <input id="newRoomName" type="text" placeholder="방 이름 입력" maxlength="50">
-          <button onclick="createRoom()">만들기</button>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top: 16px;">
         <h2>채팅방 목록 <span id="roomCount" style="font-weight:400;color:#aaa;font-size:13px;"></span></h2>
         <div class="room-list" id="roomList">
           <div class="empty">로딩 중...</div>
@@ -125,17 +113,17 @@
         countEl.textContent = `(${rooms.length})`;
 
         if (rooms.length === 0) {
-          list.innerHTML = '<div class="empty">채팅방이 없습니다. 첫 번째 방을 만들어보세요!</div>';
+          list.innerHTML = '<div class="empty">진행 중인 대화가 없습니다. 유저를 검색해서 대화를 시작해보세요!</div>';
           return;
         }
 
         list.innerHTML = rooms.map(r => `
-          <div class="room-item" onclick="enterRoom(${r.id}, '${escHtml(r.name)}')">
+          <div class="room-item" onclick="enterRoom(${r.id}, '${escHtml(r.partnerNickname)}')">
             <div>
-              <div class="room-name"># ${escHtml(r.name)}</div>
-              <div class="room-meta">방 번호 ${r.id} · ${formatDate(r.createdAt)}</div>
+              <div class="room-name">${escHtml(r.partnerNickname)}</div>
+              <div class="room-meta">방 번호 ${r.id}</div>
             </div>
-            <button class="enter-btn" onclick="event.stopPropagation(); enterRoom(${r.id}, '${escHtml(r.name)}')">입장</button>
+            <button class="enter-btn" onclick="event.stopPropagation(); enterRoom(${r.id}, '${escHtml(r.partnerNickname)}')">입장</button>
           </div>
         `).join('');
       } catch (e) {
@@ -143,25 +131,24 @@
       }
     }
 
-    // 채팅방 생성
-    async function createRoom() {
-      const name = document.getElementById('newRoomName').value.trim();
-      if (!name) { alert('방 이름을 입력하세요.'); return; }
-
+    // 대화 시작 (유저 검색에서 호출)
+    async function startChat(targetMemberId, partnerNickname) {
       try {
         const res = await fetch('/api/rooms', {
           method: 'POST',
           headers: authHeaders,
-          body: JSON.stringify({ name })
+          body: JSON.stringify({ targetMemberId })
         });
         if (res.ok) {
-          document.getElementById('newRoomName').value = '';
-          loadRooms();
+          const room = await res.json();
+          enterRoom(room.id, partnerNickname);
         } else {
-          alert('방 생성에 실패했습니다.');
+          const msg = await res.text();
+          alert('대화 시작에 실패했습니다: ' + msg);
         }
       } catch (e) {
         console.error(e);
+        alert('대화 시작 중 오류가 발생했습니다.');
       }
     }
 
@@ -190,10 +177,11 @@
         resultsEl.innerHTML = users.map(u => `
           <div class="user-item">
             <div class="user-avatar">${u.nickname.charAt(0).toUpperCase()}</div>
-            <div>
+            <div class="user-info-text">
               <div class="user-name">${escHtml(u.nickname)}</div>
               <div class="user-id">@${escHtml(u.username)}</div>
             </div>
+            <button class="chat-btn" onclick="startChat(${u.id}, '${escHtml(u.nickname)}')">대화하기</button>
           </div>
         `).join('');
       } catch (e) {
@@ -218,11 +206,6 @@
 
     loadMe();
     loadRooms();
-
-    // Enter 키로 방 생성
-    document.getElementById('newRoomName').addEventListener('keydown', e => {
-      if (e.key === 'Enter') createRoom();
-    });
   </script>
 </body>
 </html>

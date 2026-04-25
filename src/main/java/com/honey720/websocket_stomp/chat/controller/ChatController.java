@@ -28,8 +28,7 @@ public class ChatController {
     public ResponseEntity<ChatRoomResponse> createRoom(
             @RequestBody CreateRoomRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        Long myId = userDetails.getMemberId();
-        return ResponseEntity.ok(new ChatRoomResponse(chatService.createRoom(myId, request).getId()));
+        return ResponseEntity.ok(chatService.createRoom(userDetails.getUsername(), request));
     }
 
     // 채팅방 목록 조회
@@ -37,7 +36,7 @@ public class ChatController {
     public ResponseEntity<List<ChatRoomResponse>> getRooms(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        return ResponseEntity.ok(chatService.getMyRooms(userDetails.getMemberId()));
+        return ResponseEntity.ok(chatService.getMyRooms(userDetails.getUsername()));
     }
 
     // 채팅방 메시지 내역 조회

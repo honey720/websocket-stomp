@@ -1,17 +1,14 @@
 package com.honey720.websocket_stomp.chat.dto;
 
-import com.honey720.websocket_stomp.chat.entity.ChatRoom;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
 
 @Getter
 public class ChatRoomResponse {
     private final Long id;
-    //private final LocalDateTime createdAt;
+    private final String partnerNickname;
 
-    public ChatRoomResponse(Long chatRoomId) {
+    public ChatRoomResponse(Long chatRoomId, String partnerNickname) {
         this.id = chatRoomId;
-        //this.createdAt = chatRoom.getCreatedAt();
+        this.partnerNickname = partnerNickname;
     }
 }

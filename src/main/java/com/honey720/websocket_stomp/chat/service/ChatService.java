@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,38 +28,48 @@ public class ChatService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public ChatRoom createRoom(Long myId, CreateRoomRequest request) {
-        Member me = findMyData(myId);
+    public ChatRoomResponse createRoom(String myUsername, CreateRoomRequest request) {
+        Member me = findMemberByUsername(myUsername);
         Long targetId = request.getTargetMemberId();
+        if (me.getId().equals(targetId)) {
+            throw new IllegalArgumentException("자기 자신과 대화할 수 없습니다.");
+        }
         Member target = memberRepository.findById(targetId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 멤버를 찾을 수 없습니다: " + targetId));
 
+        //Optional<Long> existingRoomId = chatRoomMemberRepository.findExistingRoomId(me.getId(), targetId);
+        //if (existingRoomId.isPresent()) {
+        //    return new ChatRoomResponse(existingRoomId.get(), target.getNickname());
+        //}
+//
         ChatRoom createdRoom = chatRoomRepository.save(ChatRoom.builder().build());
 
-        ChatRoomMember myData = ChatRoomMember.builder()
-                .memberId(me.getId())
-                .chatRoomId(createdRoom.getId())
-                .build();
-        ChatRoomMember targetData = ChatRoomMember.builder()
-                .memberId(target.getId())
-                .chatRoomId(createdRoom.getId())
-                .build();
-        chatRoomMemberRepository.saveAll(List.of(myData, targetData));
+        chatRoomMemberRepository.saveAll(List.of(
+                ChatRoomMember.builder().memberId(me.getId()).chatRoomId(createdRoom.getId()).build(),
+                ChatRoomMember.builder().memberId(target.getId()).chatRoomId(createdRoom.getId()).build()
+        ));
 
-        return createdRoom;
+        return new ChatRoomResponse(createdRoom.getId(), target.getNickname());
     }
 
-    public List<ChatRoomResponse> getMyRooms(Long myId) {
-        Member me = findMyData(myId);
+    public List<ChatRoomResponse> getMyRooms(String myUsername) {
+        Member me = findMemberByUsername(myUsername);
         List<Long> chatRoomIds = chatRoomMemberRepository.findChatRoomIdsByMemberId(me.getId());
         return chatRoomIds.stream()
-                .map(ChatRoomResponse::new)
+                .map(roomId -> {
+                    String partnerNickname = chatRoomMemberRepository
+                            .findPartnerIdByRoomIdAndMyId(roomId, me.getId())
+                            .flatMap(memberRepository::findById)
+                            .map(Member::getNickname)
+                            .orElse("알 수 없음");
+                    return new ChatRoomResponse(roomId, partnerNickname);
+                })
                 .toList();
     }
 
-    private Member findMyData(Long myId) {
-        return memberRepository.findById(myId)
-                .orElseThrow(() -> new IllegalArgumentException("내 정보를 찾을 수 없습니다: " + myId));
+    private Member findMemberByUsername(String username) {
+        return memberRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("멤버를 찾을 수 없습니다: " + username));
     }
 
     @Transactional
