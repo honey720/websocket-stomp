@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -45,8 +44,8 @@ public class ChatService {
         ChatRoom createdRoom = chatRoomRepository.save(ChatRoom.builder().build());
 
         chatRoomMemberRepository.saveAll(List.of(
-                ChatRoomMember.builder().memberId(me.getId()).chatRoomId(createdRoom.getId()).build(),
-                ChatRoomMember.builder().memberId(target.getId()).chatRoomId(createdRoom.getId()).build()
+                ChatRoomMember.builder().member(me).chatRoom(createdRoom).build(),
+                ChatRoomMember.builder().member(target).chatRoom(createdRoom).build()
         ));
 
         return new ChatRoomResponse(createdRoom.getId(), target.getNickname());
@@ -54,17 +53,7 @@ public class ChatService {
 
     public List<ChatRoomResponse> getMyRooms(String myUsername) {
         Member me = findMemberByUsername(myUsername);
-        List<Long> chatRoomIds = chatRoomMemberRepository.findChatRoomIdsByMemberId(me.getId());
-        return chatRoomIds.stream()
-                .map(roomId -> {
-                    String partnerNickname = chatRoomMemberRepository
-                            .findPartnerIdByRoomIdAndMyId(roomId, me.getId())
-                            .flatMap(memberRepository::findById)
-                            .map(Member::getNickname)
-                            .orElse("알 수 없음");
-                    return new ChatRoomResponse(roomId, partnerNickname);
-                })
-                .toList();
+        return chatRoomMemberRepository.findChatRoomsWithPartner(me);
     }
 
     private Member findMemberByUsername(String username) {

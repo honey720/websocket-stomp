@@ -40,11 +40,11 @@ public class Member extends BaseEntity {
         updatedAt = LocalDateTime.now();
     }
 
-    private void banMember() {
+    public void banMember() {
         this.enabled = false;
     }
 
-    private void unBanMember() {
+    public void unBanMember() {
         this.enabled = true;
     }
 

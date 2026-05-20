@@ -13,16 +13,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatRoomMember extends BaseEntity {
 
-    @Column(nullable = false)
-    private Long chatRoomId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chat_room_id", nullable = false)
+    private ChatRoom chatRoom;
 
-    @Column(nullable = false)
-    private Long memberId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Builder
-    public ChatRoomMember(Long chatRoomId, Long memberId) {
-        this.chatRoomId = chatRoomId;
-        this.memberId = memberId;
+    public ChatRoomMember(ChatRoom chatRoom, Member member) {
+        this.chatRoom = chatRoom;
+        this.member = member;
     }
 
 }
