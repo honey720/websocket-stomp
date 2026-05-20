@@ -75,8 +75,8 @@
           msg.style.display = 'block';
           setTimeout(() => window.location.href = '/login.html', 1500);
         } else {
-          const text = await res.text();
-          msg.textContent = text || '회원가입에 실패했습니다.';
+          const data = await res.json().catch(() => null);
+          msg.textContent = data?.message || '회원가입에 실패했습니다.';
           msg.className = 'message error';
           msg.style.display = 'block';
         }

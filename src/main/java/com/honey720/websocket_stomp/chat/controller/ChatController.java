@@ -4,12 +4,14 @@ import com.honey720.websocket_stomp.chat.dto.ChatMessageDto;
 import com.honey720.websocket_stomp.chat.dto.ChatRoomResponse;
 import com.honey720.websocket_stomp.chat.dto.CreateRoomRequest;
 import com.honey720.websocket_stomp.chat.service.ChatService;
+import com.honey720.websocket_stomp.security.dto.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,18 +25,18 @@ public class ChatController {
 
     // 채팅방 생성
     @PostMapping("/api/rooms")
-    public ResponseEntity<ChatRoomResponse> createRoom(@RequestBody CreateRoomRequest request) {
-        return ResponseEntity.ok(new ChatRoomResponse(chatService.createRoom(request)));
+    public ResponseEntity<ChatRoomResponse> createRoom(
+            @RequestBody CreateRoomRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(chatService.createRoom(userDetails.getUsername(), request));
     }
 
     // 채팅방 목록 조회
     @GetMapping("/api/rooms")
-    public ResponseEntity<List<ChatRoomResponse>> getRooms() {
-        return ResponseEntity.ok(
-                chatService.getAllRooms().stream()
-                        .map(ChatRoomResponse::new)
-                        .toList()
-        );
+    public ResponseEntity<List<ChatRoomResponse>> getRooms(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ResponseEntity.ok(chatService.getMyRooms(userDetails.getUsername()));
     }
 
     // 채팅방 메시지 내역 조회

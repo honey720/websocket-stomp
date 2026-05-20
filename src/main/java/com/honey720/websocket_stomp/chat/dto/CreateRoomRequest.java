@@ -1,10 +1,15 @@
 package com.honey720.websocket_stomp.chat.dto;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
-@NoArgsConstructor
 public class CreateRoomRequest {
-    private String name;
+    private final Long targetMemberId;
+
+    @JsonCreator
+    public CreateRoomRequest(@JsonProperty("targetMemberId") Long targetMemberId) {
+        this.targetMemberId = targetMemberId;
+    }
 }

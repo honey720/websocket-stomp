@@ -70,6 +70,8 @@
             errorMsg.style.display = 'block';
           }
         } else {
+          const data = await res.json().catch(() => null);
+          errorMsg.textContent = data?.message || '아이디 또는 비밀번호가 올바르지 않습니다.';
           errorMsg.style.display = 'block';
         }
       } catch (err) {

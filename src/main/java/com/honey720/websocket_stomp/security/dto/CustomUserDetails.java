@@ -46,6 +46,14 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return member.isEnabled();
+    }
+
+    public Long getMemberId() {
+        return member.getId();
+    }
+
+    public String getNickname() {
+        return member.getNickname();
     }
 }
